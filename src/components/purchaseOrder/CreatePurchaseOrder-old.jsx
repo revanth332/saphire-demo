@@ -200,10 +200,10 @@ const POGenerationScreen = ({
           );
           addBotMessage(
             `I was able to locate ${updatedPoDetails.vendor} based in Michigan. I have added the supplier details to the PO.`,
-            2500,
+            15000,
             "1" // Generate PO1
           );
-          addBotMessage("What would you like for the delivery address to be?", 1200);
+          addBotMessage("What would you like for the delivery address to be?", 6000);
           nextStage = 1;
           break;
 
@@ -217,12 +217,12 @@ const POGenerationScreen = ({
           }
           addBotMessage(
             `Sure, marked this for delivery to ${confirmedAddress}.`,
-            1200,
+            7000,
             "2" // Generate PO2
           );
           addBotMessage(
             `Alright, how many gallons of ${updatedPoDetails.item || "the item"} do we need?`,
-            1200
+            6200
           );
           nextStage = 2;
           break;
@@ -235,11 +235,11 @@ const POGenerationScreen = ({
             updatedPoDetails.price = "$1.25 per gallon"; // Example price
             addBotMessage(
               `Perfect, I’ve added all the details. Quantity: ${updatedPoDetails.quantity}.`,
-              1000
+              4000
             );
             addBotMessage(
               "Please review the PO and let me know if you need any other changes.",
-              1500,
+              5500,
               "3" // Generate Final PO (PO3)
             );
             nextStage = 3;
@@ -268,7 +268,7 @@ const POGenerationScreen = ({
             nextStage = 0;
           } else {
             addBotMessage(
-              "The PO is ready on the right. You can click 'Send PO' or say 'new po' to start another one.",
+              "The PO is ready on the right. You can click 'Send PO' or say 'New PO' to start another one.",
               0
             );
           }
@@ -303,7 +303,12 @@ const POGenerationScreen = ({
           ]);
           if (userWantsToListenRef.current) {
             ttsQueueRef.current.push({ text: response.text });
-            if (processTTSQueueRef.current) processTTSQueueRef.current();
+            // FIX: Defer TTS processing slightly to allow React to render the message first
+            setTimeout(() => {
+              if (processTTSQueueRef.current && !isBotSpeakingRef.current) {
+                processTTSQueueRef.current();
+              }
+            }, 50); // Small delay, adjust if necessary
           }
           if (response.poUpdate !== undefined) { // Allows null to clear PO
             setPoPreviewContent(response.poUpdate);
@@ -312,8 +317,8 @@ const POGenerationScreen = ({
         botMessageTimeoutsRef.current.push(timeoutId);
         
         const intervalForThisMessage = (response.delay || (BASE_INTERVAL + Math.random() * RANDOM_INTERVAL_SPAN)) + Math.random() * 200;
-        cumulativeTimeoutForMessageAppearance += (response.delay || 0);
-        totalDurationForBotTyping += intervalForThisMessage;
+        cumulativeTimeoutForMessageAppearance += (response.delay || 0); // This correctly sums only the explicit delays for appearance scheduling
+        totalDurationForBotTyping += intervalForThisMessage; // This sums up total "activity time" for the bot_typing flag
       });
 
       const finalTimeoutId = setTimeout(() => {
@@ -321,13 +326,12 @@ const POGenerationScreen = ({
         if (
           userWantsToListenRef.current &&
           !isListeningRef.current &&
-          !isBotSpeakingRef.current &&
+          !isBotSpeakingRef.current && // Ensure bot is not speaking
           speechSupported &&
-          startContinuousAzureListeningRef.current
+          startContinuousAzureListeningRef.current &&
+          ttsQueueRef.current.length === 0 // FIX: Ensure TTS queue is empty
         ) {
-          if (ttsQueueRef.current.length === 0) {
-            startContinuousAzureListeningRef.current();
-          }
+          startContinuousAzureListeningRef.current();
         }
       }, totalDurationForBotTyping); 
       botMessageTimeoutsRef.current.push(finalTimeoutId);
@@ -350,21 +354,14 @@ const POGenerationScreen = ({
         sender: "user",
       },
     ]);
-    const userDisplayTime = 1500; // Delay before bot response starts, allowing user to see their message
-    // If not using TTS, this delay can be shorter. If using TTS, it might be overridden by speech.
-    // However, for purely text-based interaction or if TTS is quick, this ensures user message is visible.
-
-    // Clear input immediately after sending for better UX
+    
     setInputValue(""); 
     
-    // Simulate bot "thinking" or processing after user message is displayed
-    // This delay should ideally be short, just enough for the user's message to register
-    // The actual bot response delays are handled within simulateBotResponseFn
     setTimeout(() => {
       if (simulateBotResponseRef.current) {
         simulateBotResponseRef.current(textToSend);
       }
-    }, 50); // Short delay, then simulateBotResponse will handle its own delays.
+    }, 50); 
   }, []);
   useEffect(() => {
     handleSendMessageInternalRef.current = handleSendMessageInternalFn;
@@ -396,15 +393,15 @@ const POGenerationScreen = ({
     recognizer.recognized = (s, e) => {
       if (e.result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
         const transcript = e.result.text;
-        setInputValue(transcript); // Show final recognized text briefly
+        setInputValue(transcript); 
         if (
           transcript.trim() &&
           !isBotSpeakingRef.current &&
           handleSendMessageInternalRef.current
         ) {
-          setTimeout( // Delay sending slightly to allow user to see full transcript
+          setTimeout( 
             () => handleSendMessageInternalRef.current(transcript),
-            500 // Increased from 50ms to 500ms
+            500 
           );
         } else if (!transcript.trim()) setInputValue("");
       } else if (e.result.reason === SpeechSDK.ResultReason.NoMatch)
@@ -430,7 +427,7 @@ const POGenerationScreen = ({
       }
       setSpeechError(errText);
       setInputValue("");
-      if (speechRecognizerRef.current === recognizer) {
+      if (speechRecognizerRef.current === recognizer) { // Check if it's the current recognizer before closing
         try {
           recognizer.close();
         } catch (err) {
@@ -438,7 +435,7 @@ const POGenerationScreen = ({
         }
         speechRecognizerRef.current = null;
       }
-      setIsListening(false);
+      setIsListening(false); // Ensure state is updated
     };
     recognizer.sessionStarted = () => {
       setIsListening(true);
@@ -453,7 +450,7 @@ const POGenerationScreen = ({
       (err) => {
         console.error("STT: Error starting continuous recognition:", err);
         setSpeechError(`STT Start Error: ${err}`);
-        if (speechRecognizerRef.current === recognizer) {
+        if (speechRecognizerRef.current === recognizer) { // Check if it's the current recognizer
           try {
             recognizer.close();
           } catch (err) {
@@ -461,7 +458,7 @@ const POGenerationScreen = ({
           }
           speechRecognizerRef.current = null;
         }
-        setIsListening(false);
+        setIsListening(false); // Ensure state is updated
       }
     );
   }, [azureSpeechConfig, speechSupported]);
@@ -477,12 +474,13 @@ const POGenerationScreen = ({
         recognizerToStop.stopContinuousRecognitionAsync(
           () => {
             try {
-              recognizerToStop.close();
+              recognizerToStop.close(); // sessionStopped should handle setIsListening(false)
             } catch (e) {
               console.warn("Error closing recognizer on stop:", e);
+               setIsListening(false); // Fallback if close errors before sessionStopped
             }
-            if (!preserveUserIntent || !userWantsToListenRef.current) 
-              setIsListening(false);
+            // If sessionStopped is reliable, this might not be needed here.
+            // setIsListening(false); // FIX: More direct control, sessionStopped can be delayed
           },
           (err) => {
             console.error("Error stopping STT:", err);
@@ -491,16 +489,21 @@ const POGenerationScreen = ({
             } catch (e) {
               console.warn("Error closing recognizer on stop error:", e);
             }
-             if (!preserveUserIntent || !userWantsToListenRef.current)
-              setIsListening(false);
+            setIsListening(false); // FIX: Ensure isListening is false on error too
           }
         );
+      } else {
+         // If no recognizerRef, ensure isListening is false if it was somehow true.
+         setIsListening(false);
       }
+      
+      // FIX: Always update isListening state if we are actively stopping.
+      // The recognizer's sessionStopped might take time or might not fire if closed abruptly.
+      setIsListening(false);
+
+
       if (!preserveUserIntent) { 
         setUserWantsToListen(false);
-      }
-      if (!preserveUserIntent || !userWantsToListenRef.current) {
-         setIsListening(false);
       }
     },
     [] 
@@ -512,21 +515,24 @@ const POGenerationScreen = ({
   const speakTextFn = useCallback(
     async (textToSpeak) => {
       if (isListeningRef.current && stopContinuousAzureListeningRef.current) {
-        stopContinuousAzureListeningRef.current(true); 
+        stopContinuousAzureListeningRef.current(true); // true to preserve user intent to listen later
       }
 
       if (!speechSynthesizerRef.current || !textToSpeak || !synthesizerReady) {
         console.warn("TTS: Synthesizer not ready or no text to speak. Text:", textToSpeak, "Synthesizer Ready:", synthesizerReady);
+        // If speech fails to start, remove it from queue and try next or allow STT restart
         if (ttsQueueRef.current.length > 0 && ttsQueueRef.current[0].text === textToSpeak) {
             ttsQueueRef.current.shift();
         }
-        if (processTTSQueueRef.current) processTTSQueueRef.current(); 
-        else if ( 
+        if (processTTSQueueRef.current) {
+             processTTSQueueRef.current(); 
+        } else if ( // This else-if might be redundant if processTTSQueue calls STT restart logic
           userWantsToListenRef.current &&
           !isListeningRef.current &&
           !isBotSpeakingRef.current && 
           speechSupported &&
-          startContinuousAzureListeningRef.current
+          startContinuousAzureListeningRef.current &&
+          ttsQueueRef.current.length === 0 // Ensure queue is empty
         ) {
           setTimeout(() => { 
             if (
@@ -565,26 +571,30 @@ const POGenerationScreen = ({
             );
           }
           
+          // Remove spoken item from queue
           if (ttsQueueRef.current.length > 0 && ttsQueueRef.current[0].text === textToSpeak) {
             ttsQueueRef.current.shift();
           }
 
+          // Process next item in queue or restart listening
           if (ttsQueueRef.current.length > 0 && processTTSQueueRef.current) {
             processTTSQueueRef.current(); 
           } else if ( 
             userWantsToListenRef.current &&
-            !isListeningRef.current && 
+            !isListeningRef.current && // Should be true as we just stopped speaking
             speechSupported &&
-            startContinuousAzureListeningRef.current
+            startContinuousAzureListeningRef.current // Function exists
+            // !isBotSpeakingRef.current is implicitly true here
+            // ttsQueueRef.current.length === 0 is also implicitly true
           ) {
-            setTimeout(() => { 
+            setTimeout(() => { // Add a small delay before restarting listening
               if (
                 userWantsToListenRef.current &&
                 !isListeningRef.current &&
-                !isBotSpeakingRef.current && 
+                !isBotSpeakingRef.current && // Double check, should be false
                 speechSupported &&
                 startContinuousAzureListeningRef.current &&
-                ttsQueueRef.current.length === 0 
+                ttsQueueRef.current.length === 0 // Explicit check
               ) {
                 startContinuousAzureListeningRef.current();
               }
@@ -596,10 +606,12 @@ const POGenerationScreen = ({
           console.error("TTS Failure:", error);
           setSpeechError(`TTS Failure: ${String(error).substring(0, 100)}`);
 
+          // Remove failed item from queue
           if (ttsQueueRef.current.length > 0 && ttsQueueRef.current[0].text === textToSpeak) {
             ttsQueueRef.current.shift();
           }
           
+          // Process next item in queue or restart listening
           if (ttsQueueRef.current.length > 0 && processTTSQueueRef.current) {
             processTTSQueueRef.current();
           } else if (
@@ -607,15 +619,17 @@ const POGenerationScreen = ({
             !isListeningRef.current &&
             speechSupported &&
             startContinuousAzureListeningRef.current
+            // !isBotSpeakingRef.current is implicitly true here
+            // ttsQueueRef.current.length === 0 is also implicitly true
           ) {
-             setTimeout(() => {
+             setTimeout(() => { // Add a small delay
               if (
                 userWantsToListenRef.current &&
                 !isListeningRef.current &&
-                !isBotSpeakingRef.current &&
+                !isBotSpeakingRef.current && // Double check
                 speechSupported &&
                 startContinuousAzureListeningRef.current &&
-                ttsQueueRef.current.length === 0
+                ttsQueueRef.current.length === 0 // Explicit check
               ) {
                 startContinuousAzureListeningRef.current();
               }
@@ -639,6 +653,8 @@ const POGenerationScreen = ({
     ) {
       speakTextRef.current(ttsQueueRef.current[0].text);
     }
+    // If queue is empty and bot is not speaking, conditions for STT restart might be met.
+    // This is handled in speakTextFn completion and simulateBotResponseFn final timeout.
   }, [synthesizerReady]); 
   
   useEffect(() => {
@@ -649,16 +665,17 @@ const POGenerationScreen = ({
   useEffect(() => {
     if (
       welcomeMessageSent ||
-      (!synthesizerReady && speechSupported && !azureSpeechConfig)
+      (!synthesizerReady && speechSupported && !azureSpeechConfig) // Still waiting for config/synthesizer
     ) {
       return;
     }
 
+    // Proceed if speech is not supported (text-only welcome) OR if synthesizer is ready
     if (!speechSupported || synthesizerReady) {
-      // --- UPDATED WELCOME MESSAGE ---
       const welcomeMessageText = "Welcome to the Miraxeon Voice Agent for PO Creation - how can I help you today?";
       
       setMessages((prevMessages) => {
+        // Avoid adding duplicate welcome messages on hot reloads if state isn't fully reset
         if (prevMessages.some((m) => m.id.startsWith("welcome-"))) {
           return prevMessages;
         }
@@ -678,11 +695,17 @@ const POGenerationScreen = ({
         if (!ttsQueueRef.current.some(item => item.text === welcomeMessageText)) {
              ttsQueueRef.current.push({ text: welcomeMessageText });
         }
-        if (processTTSQueueRef.current) processTTSQueueRef.current(); 
+        // Call processTTSQueue after a slight delay to ensure message is rendered
+        setTimeout(() => {
+            if (processTTSQueueRef.current && !isBotSpeakingRef.current) {
+                processTTSQueueRef.current();
+            }
+        }, 50);
       }
       setWelcomeMessageSent(true); 
 
-      const listenStartDelay = (synthesizerReady && userWantsToListenRef.current && ttsQueueRef.current.length > 0) ? 1500 : 500;
+      // Delay for starting listening, give TTS a chance to start/finish for welcome message
+      const listenStartDelay = (synthesizerReady && userWantsToListenRef.current && ttsQueueRef.current.length > 0) ? 2000 : 500; // Increased delay if TTS is active for welcome
 
       setTimeout(() => {
         if (
@@ -691,7 +714,7 @@ const POGenerationScreen = ({
           !isBotTyping &&                 
           !isBotSpeakingRef.current &&    
           !isListeningRef.current &&      
-          ttsQueueRef.current.length === 0 && 
+          ttsQueueRef.current.length === 0 && // CRITICAL: Ensure TTS queue is empty
           startContinuousAzureListeningRef.current
         ) {
           startContinuousAzureListeningRef.current();
@@ -704,6 +727,8 @@ const POGenerationScreen = ({
     azureSpeechConfig, 
     welcomeMessageSent,
     isBotTyping, 
+    // Removed userWantsToListen from deps to avoid re-triggering welcome logic on mic toggle
+    // It's captured by userWantsToListenRef.current inside the effect.
   ]);
 
   useEffect(() => {
@@ -719,6 +744,7 @@ const POGenerationScreen = ({
     }
   }, [messages, speechSupported, currentDisplayPromptText]);
 
+  // Initial setup on mount
   useEffect(() => {
     setConversationStage(0);
     setPoDetails({
@@ -726,6 +752,7 @@ const POGenerationScreen = ({
       quantity: "", price: "", parsedItem: "",
     });
     setPoPreviewContent(null);
+    setMessages([]); // Clear messages on mount to ensure welcome sequence re-runs cleanly if component remounts
     setInputValue("");
     ttsQueueRef.current = [];
     setWelcomeMessageSent(false); 
@@ -733,6 +760,7 @@ const POGenerationScreen = ({
     setIsBotSpeaking(false);
     botMessageTimeoutsRef.current.forEach(clearTimeout);
     botMessageTimeoutsRef.current = [];
+    // getInitialPromptText will use the now-empty messages array
     setCurrentDisplayPromptText(getInitialPromptText()); 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
@@ -759,21 +787,21 @@ const POGenerationScreen = ({
       if (siriWaveInstanceRef.current) {
         siriWaveInstanceRef.current.dispose();
         siriWaveInstanceRef.current = null;
-      } else if (siriwave) { 
+      } else if (siriwave) { // Should not happen if instanceRef is managed correctly, but as a fallback
         siriwave.dispose();
       }
     };
-  }, [speechSupported]); 
+  }, [speechSupported]); // Re-run if speechSupported changes (e.g. permissions)
 
   useEffect(() => {
     if (siriWaveInstanceRef.current) {
       if (isListening && !isBotSpeaking && !isBotTyping) {
-        siriWaveInstanceRef.current.setAmplitude(inputValue ? 0.8 : 0.3); 
+        siriWaveInstanceRef.current.setAmplitude(inputValue ? 3: 1); 
         siriWaveInstanceRef.current.setSpeed(0.1);
       } else if (isBotSpeaking) {
-        siriWaveInstanceRef.current.setAmplitude(0.2);
+        siriWaveInstanceRef.current.setAmplitude(1);
         siriWaveInstanceRef.current.setSpeed(0.05);
-      } else {
+      } else { // Idle or BotTyping
         siriWaveInstanceRef.current.setAmplitude(0.1); 
         siriWaveInstanceRef.current.setSpeed(0.05);
       }
@@ -785,24 +813,31 @@ const POGenerationScreen = ({
       setSpeechError("Speech recognition is not supported or configured.");
       return;
     }
-    if (isBotSpeakingRef.current || isBotTyping) {
-      return;
+    if (isBotSpeakingRef.current || isBotTyping) { // isBotTyping is the state, isBotSpeakingRef is the ref
+      return; // Don't allow toggle if bot is busy
     }
 
-    const newListeningIntent = !userWantsToListenRef.current;
+    const newListeningIntent = !userWantsToListenRef.current; // Toggle the desire to listen
     setUserWantsToListen(newListeningIntent); 
 
     if (newListeningIntent) {
+      // If user wants to listen, and we are not already listening
       if (startContinuousAzureListeningRef.current && !isListeningRef.current) {
         startContinuousAzureListeningRef.current();
       }
     } else {
+      // If user wants to stop listening (mute)
       if (stopContinuousAzureListeningRef.current) {
-        stopContinuousAzureListeningRef.current(false); 
+        stopContinuousAzureListeningRef.current(false); // false: don't preserve intent, effectively mute
       }
-      setInputValue(""); 
+      setInputValue(""); // Clear any partial transcript
     }
-  }, [speechSupported, isBotTyping]); 
+  }, [speechSupported, isBotTyping]); // isBotTyping is a direct dependency
+
+  const resetPoData = () => ({ // Moved helper function for wider use
+    item: "", vendor: "", deliveryAddress: "",
+    quantity: "", price: "", parsedItem: "",
+  });
 
   const handleSendPo = () => {
     if (poPreviewContent) { // Check if a PO is actually generated
@@ -824,16 +859,17 @@ const POGenerationScreen = ({
       ]);
       if (userWantsToListenRef.current && synthesizerReady) {
         ttsQueueRef.current.push({ text: successMessageText });
-        if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current();
+        setTimeout(() => { // Defer TTS processing
+            if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current();
+        }, 50);
       }
       
       setPoPreviewContent(null);
-      setPoDetails(resetPoData()); // Use a reset function
+      setPoDetails(resetPoData()); 
       setConversationStage(0); 
       setInputValue("");
 
       setTimeout(() => {
-        // --- UPDATED NEW ORDER PROMPT ---
         const newOrderMsgText = "Welcome to the Miraxeon Voice Agent for PO Creation - how can I help you today?";
         setMessages((prev) => [
           ...prev,
@@ -845,14 +881,16 @@ const POGenerationScreen = ({
         ]);
         if (userWantsToListenRef.current && synthesizerReady) {
           ttsQueueRef.current.push({ text: newOrderMsgText });
-          if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current();
+          setTimeout(() => { // Defer TTS processing
+            if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current();
+          }, 50);
         } else if ( 
           userWantsToListenRef.current &&
           speechSupported &&
           !isListeningRef.current &&
           !isBotSpeakingRef.current && 
           startContinuousAzureListeningRef.current &&
-          ttsQueueRef.current.length === 0 
+          ttsQueueRef.current.length === 0  // FIX: Ensure TTS queue is empty
         ) {
           startContinuousAzureListeningRef.current();
         }
@@ -867,16 +905,12 @@ const POGenerationScreen = ({
       ]);
       if (userWantsToListenRef.current && synthesizerReady) {
         ttsQueueRef.current.push({ text: noPoText });
-        if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current();
+        setTimeout(() => { // Defer TTS processing
+            if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current();
+        }, 50);
       }
     }
   };
-  // Helper to reset PO details, can be defined outside if preferred, or inline if only used here.
-  const resetPoData = () => ({ 
-    item: "", vendor: "", deliveryAddress: "",
-    quantity: "", price: "", parsedItem: "",
-  });
-
 
   const styles = {
     pageContainer: {
@@ -896,7 +930,6 @@ const POGenerationScreen = ({
     },
     mainTitle: { fontSize: "24px", fontWeight: "bold", marginBottom: "5px" },
     subTitle: { fontSize: "14px", color: "#555", marginBottom: "10px" },
-    // vendorInfo is not directly used with props in this version
     contentArea: { display: "flex", flex: 1, overflow: "hidden" },
     chatPane: {
       flex: 1,
@@ -1041,24 +1074,23 @@ const POGenerationScreen = ({
       overflowY: "auto", 
       fontSize: "14px",
       color: "#333",
-      display: "flex", // Added for centering placeholder
-      alignItems: "center", // Added for centering placeholder
-      justifyContent: "center", // Added for centering placeholder
+      display: "flex", 
+      alignItems: "center", 
+      justifyContent: "center", 
     },
     previewPlaceholder: {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      // height: "100%", // Removed, parent centering handles it
       color: "#888", 
       textAlign: "center",
     },
-    poImage: { // New style for PO images
+    poImage: { 
         maxWidth: "100%",
-        maxHeight: "100%", // Ensure image fits within previewContent
+        maxHeight: "100%", 
         height: "auto",
-        objectFit: "contain", // Scales down to fit, preserves aspect ratio
+        objectFit: "contain", 
     },
   };
   
@@ -1085,12 +1117,16 @@ const POGenerationScreen = ({
     micButtonDynamicStyle = { backgroundColor: "#dc3545", color: "white", borderColor: "#dc3545" }; 
   } else if (userWantsToListen && speechSupported) { 
     micStatusText = "Muted (Tap to Unmute)"; 
-    micButtonDynamicStyle = { backgroundColor: "#007bff", color: "white", borderColor: "#007bff" }; 
+    // Changed style for "Muted" to be more distinct yet not alarming like red.
+    micButtonDynamicStyle = { backgroundColor: "#6c757d", color: "white", borderColor: "#6c757d" };  
+  } else if (!userWantsToListen && speechSupported) { // Explicitly not wanting to listen (mic off)
+     micStatusText = "Tap to Speak"; // Default state if mic is enabled but user chose not to listen
+     micButtonDynamicStyle = { backgroundColor: styles.circularMicButton.backgroundColor, color: styles.circularMicButton.color, borderColor: "#ced4da" };
   } else if (!speechSupported) { 
      micStatusText = "Speech Unavailable";
      micButtonDynamicStyle = { backgroundColor: "#e9ecef", color: "#adb5bd", borderColor: "#ced4da" };
   } else { 
-    micStatusText = "Tap to Speak";
+    micStatusText = "Tap to Speak"; // Default fallback
   }
 
 
@@ -1158,7 +1194,7 @@ const POGenerationScreen = ({
 
           <div style={styles.recognizedTextDisplay}>
             {speechSupported
-              ? inputValue || "\u00A0" 
+              ? inputValue || "\u00A0" // Non-breaking space for layout consistency
               : "Speech input unavailable."}
           </div>
 
