@@ -78,8 +78,8 @@ export function AppSidebar() {
                     transition-all duration-300 group
                     ${
                       isActive
-                        ? "bg-miracle-lightBlue text-white font-semibold shadow-md" // Active styles
-                        : "hover:bg-miracle-mediumBlue hover:text-white" // Hover styles for non-active
+                        ? "bg-miracle-lightBlue text-white font-semibold shadow-md !rounded-none" // Active styles
+                        : "hover:bg-miracle-mediumBlue hover:text-white hover:rounded-none" // Hover styles for non-active
                     }
                   `}
                   style={{ animationDelay: `${index * 50}ms` }}
