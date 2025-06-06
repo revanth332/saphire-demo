@@ -25,7 +25,7 @@ import { Input } from "../components/ui/input"
 import { PageTransition } from "../components/ui/page-transition"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { toast } from "sonner"; // Ensure sonner is installed and <Toaster /> is in your app root
-import loader from "@/assets/loader.gif"
+import loader from "@/assets/Loader.gif"
 
 
 function PurchaseOrders() {
