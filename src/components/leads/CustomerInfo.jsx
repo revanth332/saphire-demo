@@ -1,6 +1,6 @@
 import { Badge } from "../ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { Timeline } from "./timeline"
+import { Timeline } from "./TimeLine"
 
 function CustomerInfo({ lead, isLoading }) {
   const getStatusBadge = (status) => {
