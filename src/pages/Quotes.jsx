@@ -24,7 +24,7 @@ import { Input } from "../components/ui/input"
 import { PageTransition } from "../components/ui/page-transition"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { useNavigate } from "react-router-dom"
-import loader from "@/assets/loader.gif"
+import loader from "@/assets/Loader.gif"
 
 function Quotes() {
   const navigate = useNavigate();

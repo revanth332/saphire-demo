@@ -3,7 +3,7 @@ import { LeadsWidget } from "../components/dashboard/LeadsWidget"
 import { TasksWidget } from "../components/dashboard/TasksWidget"
 import { ActivityFeed } from "../components/dashboard/ActivityFeed"
 import { useState } from "react"
-// import loader from "@/assets/loader.gif"
+// import loader from "@/assets/Loader.gif"
 
 
 function Dashboard() {

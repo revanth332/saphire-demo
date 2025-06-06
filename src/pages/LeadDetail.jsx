@@ -1,4 +1,4 @@
-import loader from "@/assets/loader.gif"
+import loader from "@/assets/Loader.gif"
 import ChatSummary from "@/components/leads/ChatSummary"
 import { CustomerInfo } from "@/components/leads/CustomerInfo"
 import { Button } from "@/components/ui/button"
