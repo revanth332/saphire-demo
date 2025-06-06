@@ -1,7 +1,8 @@
+/* eslint-disable no-case-declarations */
 import React, { useState, useEffect, useRef, useCallback } from "react";
 // import BotIconSVG from "./bot-icon.svg"; // Not used
 // import UserIconSVG from "./user-icon.svg"; // Not used
-import { Mic, Send, FileText as DocumentIcon } from "lucide-react";
+import { Mic, Send, FileText as DocumentIcon, Upload,Book, Loader2, Loader } from "lucide-react";
 import GeneratedPO from "./GeneratedPO.png"; // Path to GeneratedPO.png - Maintained for original reference, not used in new flow explicitly by "GeneratedPO" name
 import GeneratedPO1 from "./PO1.png"; // Used for first PO preview
 import GeneratedPO2 from "./PO2.png"; // Used for second PO preview
@@ -9,6 +10,38 @@ import GeneratedPO2 from "./PO2.png"; // Used for second PO preview
 import GeneratedPO3 from "./PO3.png"; // Used for final PO preview
 import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
 import SiriWave from "siriwave"; // Import SiriWave: npm install siriwave
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button"
+
+
+const SummaryList = ({id}) => {
+  if(id === 0) return (
+      <ul className="pl-6 list-disc">
+        <li className="pb-1">Miraxeon seeks bids for Sodium Hypochlorite supply. </li>
+        <li className="pb-1">Proposals must meet labeling, MSDS, and delivery terms.</li>
+      </ul>
+    )
+  
+  if(id === 1) return (
+    <ul className="pl-6 list-disc">
+      <li className="pb-1">Addendum No. 1 supersedes prior documents; proposers must acknowledge receipt.</li>
+      <li className="pb-1">City uses Mitel VOIP phone system, no CRM/ERP, and has no specific live agent.</li>
+    </ul>
+  )
+
+  if(id === 2) return (
+    <ul className="pl-6 list-disc">
+      <li className="pb-1">The City of Ann Arbor seeks an omnichannel chatbot solution to enhance self-service.</li>
+      <li className="pb-1">All RFP questions must be submitted via email by September 18, 2023, to specific City contacts.</li>
+    </ul>
+  )
+}
 
 const POGenerationScreen = ({
   // vendorName and vendorEmail props are not directly used in the new flow's PO details
@@ -20,7 +53,16 @@ const POGenerationScreen = ({
   const [inputValue, setInputValue] = useState("");
   const [poPreviewContent, setPoPreviewContent] = useState(null);
   const [isBotTyping, setIsBotTyping] = useState(false);
+  const [isRfpUploading,setIsRfpUploading] = useState(false);
+  const [isSelectedRfpProcessing,setIsSelectedRfpProcessing] = useState(false);
+  const [rfpFiles,setRfpFiles] = useState([
+    {name : "RFP_23-51_Document.pdf",content : "1",summary : <SummaryList id={0} /> },
+    {name : "RFP_23-51_Addendum1.pdf",content : "1",summary : <SummaryList id={1} /> },
+    {name : "Miracle-CityofAA_Chatbot-OpenQuestions.pdf",content : "1",summary : <SummaryList id={2} /> },
+    {name : "RFP No. 23-51_Enterprise_Chatbot-Miracle_Software_Systems.pdf",content : "1",summary : <SummaryList id={0} /> },
+    {name : "RFP No. 23-51_fee_proposal_Enterprise_Chatbot-Miracle_Software_Systems.pdf",content : "1",summary : <SummaryList id={1} /> }]);
   const chatMessagesEndRef = useRef(null); // Used for scrolling chat history
+  const rfpFileInputRef = useRef(null);
 
   const siriContainerRef = useRef(null); // For the div that will host SiriWave
   const siriWaveInstanceRef = useRef(null); // To store the SiriWave instance
@@ -42,6 +84,7 @@ const POGenerationScreen = ({
   const [speechSupported, setSpeechSupported] = useState(true);
   const [azureSpeechConfig, setAzureSpeechConfig] = useState(null);
   const [synthesizerReady, setSynthesizerReady] = useState(false);
+  const [selectedRfpFileIndex,setSelectedRfpFileIndex] = useState(undefined);
 
   const speechRecognizerRef = useRef(null);
   const speechSynthesizerRef = useRef(null);
@@ -99,7 +142,6 @@ const POGenerationScreen = ({
     }
   }, [messages]);
 
-
   useEffect(() => {
     const speechKey = import.meta.env.VITE_AZURE_SPEECH_KEY;
     const speechRegion = import.meta.env.VITE_AZURE_SPEECH_REGION;
@@ -128,6 +170,7 @@ const POGenerationScreen = ({
       setSpeechSupported(false);
       setSynthesizerReady(false);
     }
+    
     return () => {
       if (speechRecognizerRef.current) {
         try {
@@ -335,7 +378,7 @@ const POGenerationScreen = ({
     if (isListeningRef.current && speechRecognizerRef.current) return;
 
     if (speechRecognizerRef.current) {
-      try { speechRecognizerRef.current.close(); } catch (e) { /* ignore */ }
+      try { speechRecognizerRef.current.close(); } catch  { /* ignore */ }
       speechRecognizerRef.current = null;
     }
     const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
@@ -392,7 +435,7 @@ const POGenerationScreen = ({
       }
       setSpeechError(errText); setInputValue("");
       if (speechRecognizerRef.current === recognizer) {
-        try { recognizer.close(); } catch (err) { /*ignore*/ }
+        try { recognizer.close(); } catch { /*ignore*/ }
         speechRecognizerRef.current = null;
       }
       setIsListening(false);
@@ -406,7 +449,7 @@ const POGenerationScreen = ({
         console.error("STT: Error starting continuous recognition:", err);
         setSpeechError(`STT Start Error: ${err}`);
         if (speechRecognizerRef.current === recognizer) {
-          try { recognizer.close(); } catch (err) { /*ignore*/ }
+          try { recognizer.close(); } catch  { /*ignore*/ }
           speechRecognizerRef.current = null;
         }
         setIsListening(false);
@@ -707,6 +750,46 @@ const POGenerationScreen = ({
     quantity: "", price: "", parsedItem: "",
   });
 
+  const handleUploadRfpButton = () => {
+    if (rfpFileInputRef.current) {
+      rfpFileInputRef.current.click();
+    }
+  }
+
+  const handleRfpFileChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    console.log(file);
+    setIsRfpUploading(true);
+    setTimeout(() => {
+      setPoPreviewContent("1");
+      setIsRfpUploading(false);
+      setRfpFiles(prev => [...prev,file.name])
+      setConversationStage(1);
+      ttsQueueRef.current.push({ text: "What would you like for the delivery address to be?" });
+      setTimeout(() => { if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current(); }, 50);
+      setMessages((prevMessages) => [
+            ...prevMessages,
+            { id: Date.now() + Math.random(), text: "What would you like for the delivery address to be?", sender: "bot" },
+          ]);
+    },1000)
+  }
+
+  const handleRfpFileSelection = () => {
+    setIsSelectedRfpProcessing(true);
+    setTimeout(() => {
+      setPoPreviewContent(rfpFiles[selectedRfpFileIndex].content);
+      setIsSelectedRfpProcessing(false);
+      setSelectedRfpFileIndex(undefined);
+      setConversationStage(1);
+      ttsQueueRef.current.push({ text: "What would you like for the delivery address to be?" });
+      setTimeout(() => { if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current(); }, 50);
+      setMessages((prevMessages) => [
+            ...prevMessages,
+            { id: Date.now() + Math.random(), text: "What would you like for the delivery address to be?", sender: "bot" },
+          ]);
+    },1000)
+  }
+
   const handleSendPo = () => {
     if (poPreviewContent) {
       const poSummary = `Item: ${poDetails.item || "N/A"}\nVendor: ${poDetails.vendor}\nQuantity: ${poDetails.quantity || "N/A"}\nPrice: ${poDetails.price || "N/A"}\nDelivery: ${poDetails.deliveryAddress || "N/A"}`;
@@ -751,17 +834,18 @@ const POGenerationScreen = ({
     mainTitle: { fontSize: "24px", fontWeight: "bold", marginBottom: "5px" },
     subTitle: { fontSize: "14px", color: "#555", marginBottom: "10px" },
     contentArea: { display: "flex", flex: 1, overflow: "hidden" },
-    chatPane: { flex: 1, display: "flex", flexDirection: "column", backgroundColor: "#FFFFFF", color: "#212529", padding: "20px", position: "relative", borderRight: "1px solid #E0E0E0" },
+    chatPane: { flex: 1, display: "flex", flexDirection: "column", backgroundColor: "#FFFFFF", color: "#212529", position: "relative", borderRight: "1px solid #E0E0E0" },
     chatHistoryContainer: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px', paddingRight: '5px' },
     chatMessage: { padding: '10px 15px', borderRadius: '18px', maxWidth: '80%', wordWrap: 'break-word', fontSize: '14px', lineHeight: '1.5', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' },
     userMessage: { backgroundColor: '#007bff', color: 'white', alignSelf: 'flex-end', borderBottomRightRadius: '4px' },
     botMessage: { backgroundColor: '#e9ecef', color: '#212529', alignSelf: 'flex-start', borderBottomLeftRadius: '4px' },
-    voiceUIPrompt: { fontSize: "22px", fontWeight: "bold", textAlign: "center", padding: "10px 0", color: "#495057", minHeight: "60px", lineHeight: "1.4", position: "relative", overflow: "hidden" },
-    recognizedTextDisplay: { fontSize: "20px", fontWeight: "500", textAlign: "center", padding: "15px 0", minHeight: "50px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#212529", lineHeight: "1.3", width: "100%" },
-    voiceUIControlsContainer: { display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: "0", marginTop: "auto" },
-    waveformDisplay: { width: "80%", height: "50px", display: "flex", alignItems: "center", justifyContent: "center", margin: "15px 0", position: "relative" },
+    voiceUIPrompt: { fontSize: "20px", fontWeight: "bold", textAlign: "center", color: "#495057", minHeight: "30px", lineHeight: "1.4", position: "relative", overflow: "hidden" },
+    recognizedTextDisplay: { fontSize: "16px", fontWeight: "500", textAlign: "center", padding: "15px 0", minHeight: "30px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#212529", lineHeight: "1.3", width: "100%" },
+    voiceUIControlsContainer: {display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: "0", marginTop: "auto" },
+    waveformDisplay: { width: "80%", height: "50px", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" },
     speechErrorText: { color: "#DC3545", fontSize: "14px", textAlign: "center", marginBottom: "10px", minHeight: "18px", fontWeight: "bold" },
-    circularMicButton: { width: "70px", height: "70px", borderRadius: "50%", border: "1px solid #ced4da", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f8f9fa", color: "#495057", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", transition: "background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease" },
+    circularMicButton: { width: "60px", height: "60px", borderRadius: "50%", border: "1px solid #ced4da", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f8f9fa", color: "#495057", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", transition: "background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease" },
+    sideButton : {width: "50px", height: "50px", borderRadius: "50%",border: "1px solid #ced4da",display: "flex", alignItems: "center", justifyContent: "center"},
     speechStatusText: { color: "#6c757d", fontSize: "14px", textAlign: "center", marginTop: "12px", minHeight: "20px" },
     previewPane: { flex: 1, display: "flex", flexDirection: "column", padding: "0", backgroundColor: "white" },
     previewHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px", borderBottom: "1px solid #e0e0e0" },
@@ -799,27 +883,79 @@ const POGenerationScreen = ({
         <div style={styles.mainTitle}>Generate PO</div>
         <div style={styles.subTitle}>Use voice to interact with the chatbot for Purchase Orders.</div>
       </div>
+
       <div style={styles.contentArea}>
+        
         <div style={styles.chatPane}>
-          <div style={styles.chatHistoryContainer}>
-            {messages.map((msg) => (<div key={msg.id} style={msg.sender === "user" ? styles.userMessage : styles.botMessage}>{msg.text}</div>))}
-            <div ref={chatMessagesEndRef} />
+          <div style={{padding:22}}>
+            <div className="flex justify-between">
+            <div>
+              <Select value={selectedRfpFileIndex !== undefined ? selectedRfpFileIndex : ""} className="rounded-sm" onValueChange={(value) => setSelectedRfpFileIndex(value)}>
+              <SelectTrigger className="w-[200px]">
+                <Book />
+                <SelectValue placeholder="Select RFP file" />
+              </SelectTrigger>
+              <SelectContent>
+                {
+                  rfpFiles.map((file,index) => <SelectItem key={index} value={index}>{file.name}</SelectItem>)
+                }
+              </SelectContent>
+            </Select>
+            </div>
+            <div className="w-[180px]">
+              <Button onClick={handleUploadRfpButton} className='w-full bg-miracle-mediumBlue text-white border-none hover:bg-miracle-mediumBlue/90 hover:text-white rounded-sm' variant={"outline"}>
+                {
+                  isRfpUploading ? <Loader2 className="animate-spin" /> : <Upload />
+                }
+                Upload RFP file
+              </Button>
+              <input onChange={handleRfpFileChange} ref={rfpFileInputRef} className="hidden" type="file" accept="application/pdf, .pdf" />
+            </div>
+            </div>
+            {
+              selectedRfpFileIndex !== undefined && <div className="text-sm mt-3">
+                <div className="h-[50px] overflow-y-auto">{rfpFiles[selectedRfpFileIndex].summary}</div>
+                <div className="flex justify-start mt-2">
+                  <Button onClick={() => setSelectedRfpFileIndex(undefined)} className="bg-red-500 hover:bg-red-400 mr-3">Cancel</Button>
+                  {
+                    isSelectedRfpProcessing
+                    ? <Button className="w-[100px] hover:bg-green-500 bg-green-500"><Loader2 className="animate-spin " /></Button>
+                    : <Button onClick={handleRfpFileSelection} className="bg-green-600 hover:bg-green-500 w-[100px] ">Generate</Button>
+                  }
+                </div>
+              </div>
+            }
           </div>
-          <div style={styles.voiceUIPrompt}>
-            {animatingOutPrompt.text && (<div key={animatingOutPrompt.key} style={{ position: "absolute", top: 0, left: 0, right: 0, fontSize: "inherit", fontWeight: "inherit", lineHeight: "inherit", padding: "inherit", color: "#adb5bd", animation: "moveUpAndFadeOut 0.4s ease-out forwards" }}>{animatingOutPrompt.text}</div>)}
-            <div key={`current-${currentDisplayPromptText}-${messages.filter((m) => m.sender === "bot").length}`} style={{ fontSize: "inherit", fontWeight: "inherit", lineHeight: "inherit", padding: "inherit", color: "inherit", animation: animatingOutPrompt.text ? "fadeInCurrent 0.3s 0.1s ease-in forwards" : "none", opacity: animatingOutPrompt.text ? 0 : 1 }}>{currentDisplayPromptText}</div>
-          </div>
-          <div style={styles.recognizedTextDisplay}>{speechSupported ? inputValue || "\u00A0" : "Speech input unavailable."}</div>
-          <div style={styles.voiceUIControlsContainer}>
-            <div ref={siriContainerRef} style={styles.waveformDisplay}></div>
-            <div style={styles.speechErrorText}>{speechError}</div>
-            <button
-              style={{ ...styles.circularMicButton, ...micButtonDynamicStyle, cursor: micDisabled ? "not-allowed" : "pointer" }}
-              onClick={handleToggleListening}
-              disabled={micDisabled}
-              title={micDisabled ? (isBotSpeaking ? "Assistant is speaking" : isBotTyping ? "Assistant is processing" : "Speech not supported") : (isListening ? "Listening... (Click to Mute)" : userWantsToListen ? "Muted (Click to Unmute/Listen)" : "Activate Microphone (Click to Speak)")}
-            ><Mic size={32} /></button>
-            <div style={styles.speechStatusText}>{!speechError ? micStatusText : ""}</div>
+
+          <hr />
+          <div style={{...styles.chatPane,padding:20}}>
+            <div className={`${selectedRfpFileIndex !== undefined ? "max-h-[180px]" : "max-h-[250px]"}`} style={styles.chatHistoryContainer}>
+              {messages.map((msg) => (<div key={msg.id} style={msg.sender === "user" ? styles.userMessage : styles.botMessage}>{msg.text}</div>))}
+              <div ref={chatMessagesEndRef} />
+            </div>
+            <div style={styles.voiceUIPrompt}>
+              {animatingOutPrompt.text && (<div key={animatingOutPrompt.key} style={{ position: "absolute", top: 0, left: 0, right: 0, fontSize: "inherit", fontWeight: "inherit", lineHeight: "inherit", padding: "inherit", color: "#adb5bd", animation: "moveUpAndFadeOut 0.4s ease-out forwards" }}>{animatingOutPrompt.text}</div>)}
+              <div key={`current-${currentDisplayPromptText}-${messages.filter((m) => m.sender === "bot").length}`} style={{ fontSize: "inherit", fontWeight: "inherit", lineHeight: "inherit", padding: "inherit", color: "inherit", animation: animatingOutPrompt.text ? "fadeInCurrent 0.3s 0.1s ease-in forwards" : "none", opacity: animatingOutPrompt.text ? 0 : 1 }}>{currentDisplayPromptText}</div>
+            </div>
+            <div style={styles.recognizedTextDisplay}>{speechSupported ? inputValue || "\u00A0" : "Speech input unavailable."}</div>
+            <div style={styles.voiceUIControlsContainer}>
+              <div ref={siriContainerRef} style={styles.waveformDisplay}></div>
+              <div style={styles.speechErrorText}>{speechError}</div>
+              <div className="w-full flex flex-col">
+                <div className="w-full flex justify-center gap-5">
+                  <div className="flex flex-col items-end">
+                      <button
+                      style={{ ...styles.circularMicButton, ...micButtonDynamicStyle, cursor: micDisabled ? "not-allowed" : "pointer" }}
+                      onClick={handleToggleListening}
+                      disabled={micDisabled}
+                      title={micDisabled ? (isBotSpeaking ? "Assistant is speaking" : isBotTyping ? "Assistant is processing" : "Speech not supported") : (isListening ? "Listening... (Click to Mute)" : userWantsToListen ? "Muted (Click to Unmute/Listen)" : "Activate Microphone (Click to Speak)")}
+                    ><Mic size={25} />
+                    </button>
+                  </div>
+                </div>
+                <div style={styles.speechStatusText}>{!speechError ? micStatusText : ""}</div>
+              </div>
+            </div>
           </div>
         </div>
         <div style={styles.previewPane}>
