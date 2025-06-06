@@ -635,31 +635,31 @@ const POGenerationScreen = ({
         return [{ id: "welcome-" + Date.now(), text: welcomeMessageText, sender: "bot" }];
       });
 
-      if (synthesizerReady && userWantsToListenRef.current) {
-        if (!ttsQueueRef.current.some(item => item.text === welcomeMessageText)) {
-             ttsQueueRef.current.push({ text: welcomeMessageText });
-        }
-        setTimeout(() => {
-            if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current();
-        }, 50);
-      }
+      // if (synthesizerReady && userWantsToListenRef.current) {
+      //   if (!ttsQueueRef.current.some(item => item.text === welcomeMessageText)) {
+      //        ttsQueueRef.current.push({ text: welcomeMessageText });
+      //   }
+      //   setTimeout(() => {
+      //       if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current();
+      //   }, 50);
+      // }
       setWelcomeMessageSent(true);
 
-      const listenStartDelay = (synthesizerReady && userWantsToListenRef.current && ttsQueueRef.current.length > 0) ? 2000 : 500;
+      // const listenStartDelay = (synthesizerReady && userWantsToListenRef.current && ttsQueueRef.current.length > 0) ? 2000 : 500;
 
-      setTimeout(() => {
-        if (
-          userWantsToListenRef.current &&
-          speechSupported &&
-          !isBotTyping && // State check
-          !isBotSpeakingRef.current &&
-          !isListeningRef.current &&
-          ttsQueueRef.current.length === 0 &&
-          startContinuousAzureListeningRef.current
-        ) {
-          startContinuousAzureListeningRef.current();
-        }
-      }, listenStartDelay);
+      // setTimeout(() => {
+      //   if (
+      //     userWantsToListenRef.current &&
+      //     speechSupported &&
+      //     !isBotTyping && // State check
+      //     !isBotSpeakingRef.current &&
+      //     !isListeningRef.current &&
+      //     ttsQueueRef.current.length === 0 &&
+      //     startContinuousAzureListeningRef.current
+      //   ) {
+      //     startContinuousAzureListeningRef.current();
+      //   }
+      // }, listenStartDelay);
     }
   }, [
     synthesizerReady, speechSupported, azureSpeechConfig,
@@ -916,7 +916,7 @@ const POGenerationScreen = ({
               selectedRfpFileIndex !== undefined && <div className="text-sm mt-3">
                 <div className="h-[50px] overflow-y-auto">{rfpFiles[selectedRfpFileIndex].summary}</div>
                 <div className="flex justify-start mt-2">
-                  <Button onClick={() => setSelectedRfpFileIndex(undefined)} className="bg-red-500 hover:bg-red-400 mr-3">Cancel</Button>
+                  {/* <Button onClick={() => setSelectedRfpFileIndex(undefined)} className="bg-red-500 hover:bg-red-400 mr-3">Cancel</Button> */}
                   {
                     isSelectedRfpProcessing
                     ? <Button className="w-[100px] hover:bg-green-500 bg-green-500"><Loader2 className="animate-spin " /></Button>
