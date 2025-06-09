@@ -717,8 +717,9 @@ const POGenerationScreen = ({
         siriWaveInstanceRef.current.setSpeed(0.1);
       } else if (isBotSpeaking) {
         siriWaveInstanceRef.current.setAmplitude(0.2); siriWaveInstanceRef.current.setSpeed(0.05);
-      } else { // Idle or BotTyping
-        siriWaveInstanceRef.current.setAmplitude(0.1); siriWaveInstanceRef.current.setSpeed(0.05);
+      }
+      else { // Idle or BotTyping
+        siriWaveInstanceRef.current.setAmplitude(0); siriWaveInstanceRef.current.setSpeed(0);
       }
     }
   }, [isListening, isBotSpeaking, isBotTyping, inputValue]);
@@ -767,12 +768,6 @@ const POGenerationScreen = ({
       setRfpFiles(prev => [...prev,file.name])
       setConversationStage(1);
       setIsConfirmationVisible(true)
-      // ttsQueueRef.current.push({ text: "What would you like for the delivery address to be?" });
-      // setTimeout(() => { if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current(); }, 50);
-      // setMessages((prevMessages) => [
-      //       ...prevMessages,
-      //       { id: Date.now() + Math.random(), text: "What would you like for the delivery address to be?", sender: "bot" },
-      //     ]);
     },1000)
   }
 
@@ -783,13 +778,7 @@ const POGenerationScreen = ({
       setIsSelectedRfpProcessing(false);
       setSelectedRfpFileIndex(undefined);
       setConversationStage(1);
-      setIsConfirmationVisible(true)
-      // ttsQueueRef.current.push({ text: "What would you like for the delivery address to be?" });
-      // setTimeout(() => { if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current(); }, 50);
-      // setMessages((prevMessages) => [
-      //       ...prevMessages,
-      //       { id: Date.now() + Math.random(), text: "What would you like for the delivery address to be?", sender: "bot" },
-      //     ]);
+      setIsConfirmationVisible(true);
     },1000)
   }
 
@@ -797,8 +786,8 @@ const POGenerationScreen = ({
       setIsConfirmationVisible(false)
       ttsQueueRef.current.push({ text: "What would you like for the delivery address to be?" });
       setTimeout(() => { if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current(); }, 50);
-      setMessages((prevMessages) => [
-            ...prevMessages,
+      setMessages(() => [
+            { id: Date.now() + Math.random(), text: "Welcome to the Miraxeon Voice Agent for PO Creation.", sender: "bot" },
             { id: Date.now() + Math.random(), text: "What would you like for the delivery address to be?", sender: "bot" },
       ]);
   }
@@ -843,12 +832,12 @@ const POGenerationScreen = ({
 
   const styles = {
     pageContainer: { display: "flex", flexDirection: "column", fontFamily: "Arial, sans-serif", height: "100vh", margin: "0 auto", border: "1px solid #ccc", boxShadow: "0 0 10px rgba(0,0,0,0.1)", overflow: "hidden" },
-    header: { padding: "20px", borderBottom: "1px solid #e0e0e0", backgroundColor: "#f8f9fa" },
+    header: { padding: "11px 20px", borderBottom: "1px solid #e0e0e0", backgroundColor: "#f8f9fa" },
     mainTitle: { fontSize: "24px", fontWeight: "bold", marginBottom: "5px" },
     subTitle: { fontSize: "14px", color: "#555", marginBottom: "10px" },
-    contentArea: { display: "flex", flex: 1, overflow: "hidden" },
-    chatPane: { flex: 1, display: "flex", flexDirection: "column", backgroundColor: "#FFFFFF", color: "#212529", position: "relative", borderRight: "1px solid #E0E0E0" },
-    chatHistoryContainer: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px', paddingRight: '5px' },
+    contentArea: { display: "flex", flex: 1, overflow: "hidden",width:"100%" },
+    chatPane: {display: "flex",width:"50%", flexDirection: "column", backgroundColor: "#FFFFFF", color: "#212529", position: "relative", borderRight: "1px solid #E0E0E0" },
+    chatHistoryContainer: { overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px', paddingRight: '5px' },
     chatMessage: { padding: '10px 15px', borderRadius: '18px', maxWidth: '80%', wordWrap: 'break-word', fontSize: '14px', lineHeight: '1.5', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' },
     userMessage: { backgroundColor: '#007bff', color: 'white', alignSelf: 'flex-end', borderBottomRightRadius: '4px' },
     botMessage: { backgroundColor: '#e9ecef', color: '#212529', alignSelf: 'flex-start', borderBottomLeftRadius: '4px' },
@@ -894,7 +883,7 @@ const POGenerationScreen = ({
     <div style={styles.pageContainer}>
       <div style={styles.header}>
         <div style={styles.mainTitle}>Generate PO</div>
-        <div style={styles.subTitle}>Use voice to interact with the chatbot for Purchase Orders.</div>
+        {/* <div style={styles.subTitle}>Use voice to interact with the chatbot for Purchase Orders.</div> */}
       </div>
 
       <div style={styles.contentArea}>
@@ -903,7 +892,7 @@ const POGenerationScreen = ({
           <div style={{padding:22}}>
             <div className="flex justify-between">
             <div>
-              <Select value={selectedRfpFileIndex !== undefined ? selectedRfpFileIndex : ""} className="rounded-sm" onValueChange={(value) => setSelectedRfpFileIndex(value)}>
+              <Select value={selectedRfpFileIndex !== undefined ? selectedRfpFileIndex : ""} className="rounded-sm" onValueChange={(value) => {setSelectedRfpFileIndex(value);setIsConfirmationVisible(false)}}>
               <SelectTrigger className="w-[200px]">
                 <Book />
                 <SelectValue placeholder="Select RFP file" />
@@ -927,7 +916,7 @@ const POGenerationScreen = ({
             </div>
             {
               selectedRfpFileIndex !== undefined && <div className="text-sm mt-3">
-                <div className="h-[50px] overflow-y-auto">{rfpFiles[selectedRfpFileIndex].summary}</div>
+                <div className="h-[70px] overflow-y-auto">{rfpFiles[selectedRfpFileIndex].summary}</div>
                 <div className="flex justify-start mt-2">
                   {/* <Button onClick={() => setSelectedRfpFileIndex(undefined)} className="bg-red-500 hover:bg-red-400 mr-3">Cancel</Button> */}
                   {
@@ -941,7 +930,7 @@ const POGenerationScreen = ({
           </div>
 
           <hr />
-          <div style={{...styles.chatPane,padding:20}}>
+          <div style={{...styles.chatPane,width:"100%",padding:20}}>
             {isConfirmationVisible && <>
               <div className="bg-white/70 absolute h-full w-full top-0 left-0 z-10"></div>
               <div className="absolute h-full w-full top-0 left-0 z-20 flex justify-center items-center flex-col gap-3">
@@ -951,7 +940,7 @@ const POGenerationScreen = ({
               </div>
             </>}
  
-            <div className={`${selectedRfpFileIndex !== undefined ? "max-h-[180px]" : "max-h-[250px]"}`} style={styles.chatHistoryContainer}>
+            <div className={`${selectedRfpFileIndex !== undefined ? "h-[220px]" : "h-[345px]"}`} style={styles.chatHistoryContainer}>
               {messages.map((msg) => (<div key={msg.id} style={msg.sender === "user" ? styles.userMessage : styles.botMessage}>{msg.text}</div>))}
               <div ref={chatMessagesEndRef} />
             </div>
@@ -961,7 +950,7 @@ const POGenerationScreen = ({
             </div>}
             <div style={styles.recognizedTextDisplay}>{speechSupported ? inputValue || "\u00A0" : "Speech input unavailable."}</div>
             <div style={styles.voiceUIControlsContainer}>
-              <div ref={siriContainerRef} style={styles.waveformDisplay}></div>
+              <div ref={siriContainerRef} style={{...styles.waveformDisplay, visibility: (isBotSpeaking || isListening) ? "visible" : "hidden"}}></div>
               <div style={styles.speechErrorText}>{speechError}</div>
               <div className="w-full flex flex-col">
                 <div className="w-full flex justify-center gap-5">
