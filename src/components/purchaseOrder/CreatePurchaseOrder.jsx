@@ -945,7 +945,7 @@ const POGenerationScreen = ({
             {isConfirmationVisible && <>
               <div className="bg-white/70 absolute h-full w-full top-0 left-0 z-10"></div>
               <div className="absolute h-full w-full top-0 left-0 z-20 flex justify-center items-center flex-col gap-3">
-                <p>Do you want to continue with the PO generation ?</p>
+                <p>Get Started with Voice Assisted Journey?</p>
                 <Button className="text-miracle-darkBlue border border-miracle-darkBlue hover:text-miracle-darkBlue" onClick={handleContinuePoGeneration} variant={"outline"}>Continue</Button>
                 {/* <Button className="bg-miracle-mediumBlue border border-miracle-mediumBlue text-white hover:bg-miracle-mediumBlue/90 hover:text-miracle-white" onClick={handleContinuePoGeneration}>Continue</Button> */}
               </div>
