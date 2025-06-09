@@ -55,6 +55,7 @@ const POGenerationScreen = ({
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [isRfpUploading,setIsRfpUploading] = useState(false);
   const [isSelectedRfpProcessing,setIsSelectedRfpProcessing] = useState(false);
+  const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [rfpFiles,setRfpFiles] = useState([
     {name : "RFP_23-51_Document.pdf",content : "1",summary : <SummaryList id={0} /> },
     {name : "RFP_23-51_Addendum1.pdf",content : "1",summary : <SummaryList id={1} /> },
@@ -645,7 +646,7 @@ const POGenerationScreen = ({
       // }
       setWelcomeMessageSent(true);
 
-      // const listenStartDelay = (synthesizerReady && userWantsToListenRef.current && ttsQueueRef.current.length > 0) ? 2000 : 500;
+      // chconst listenStartDelay = (synthesizerReady && userWantsToListenRef.current && ttsQueueRef.current.length > 0) ? 2000 : 500;
 
       // setTimeout(() => {
       //   if (
@@ -765,12 +766,13 @@ const POGenerationScreen = ({
       setIsRfpUploading(false);
       setRfpFiles(prev => [...prev,file.name])
       setConversationStage(1);
-      ttsQueueRef.current.push({ text: "What would you like for the delivery address to be?" });
-      setTimeout(() => { if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current(); }, 50);
-      setMessages((prevMessages) => [
-            ...prevMessages,
-            { id: Date.now() + Math.random(), text: "What would you like for the delivery address to be?", sender: "bot" },
-          ]);
+      setIsConfirmationVisible(true)
+      // ttsQueueRef.current.push({ text: "What would you like for the delivery address to be?" });
+      // setTimeout(() => { if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current(); }, 50);
+      // setMessages((prevMessages) => [
+      //       ...prevMessages,
+      //       { id: Date.now() + Math.random(), text: "What would you like for the delivery address to be?", sender: "bot" },
+      //     ]);
     },1000)
   }
 
@@ -781,13 +783,24 @@ const POGenerationScreen = ({
       setIsSelectedRfpProcessing(false);
       setSelectedRfpFileIndex(undefined);
       setConversationStage(1);
+      setIsConfirmationVisible(true)
+      // ttsQueueRef.current.push({ text: "What would you like for the delivery address to be?" });
+      // setTimeout(() => { if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current(); }, 50);
+      // setMessages((prevMessages) => [
+      //       ...prevMessages,
+      //       { id: Date.now() + Math.random(), text: "What would you like for the delivery address to be?", sender: "bot" },
+      //     ]);
+    },1000)
+  }
+
+  const handleContinuePoGeneration = () => {
+      setIsConfirmationVisible(false)
       ttsQueueRef.current.push({ text: "What would you like for the delivery address to be?" });
       setTimeout(() => { if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current(); }, 50);
       setMessages((prevMessages) => [
             ...prevMessages,
             { id: Date.now() + Math.random(), text: "What would you like for the delivery address to be?", sender: "bot" },
-          ]);
-    },1000)
+      ]);
   }
 
   const handleSendPo = () => {
@@ -929,14 +942,23 @@ const POGenerationScreen = ({
 
           <hr />
           <div style={{...styles.chatPane,padding:20}}>
+            {isConfirmationVisible && <>
+              <div className="bg-white/70 absolute h-full w-full top-0 left-0 z-10"></div>
+              <div className="absolute h-full w-full top-0 left-0 z-20 flex justify-center items-center flex-col gap-3">
+                <p>Do you want to continue with the PO generation ?</p>
+                <Button className="text-miracle-darkBlue border border-miracle-darkBlue hover:text-miracle-darkBlue" onClick={handleContinuePoGeneration} variant={"outline"}>Continue</Button>
+                {/* <Button className="bg-miracle-mediumBlue border border-miracle-mediumBlue text-white hover:bg-miracle-mediumBlue/90 hover:text-miracle-white" onClick={handleContinuePoGeneration}>Continue</Button> */}
+              </div>
+            </>}
+ 
             <div className={`${selectedRfpFileIndex !== undefined ? "max-h-[180px]" : "max-h-[250px]"}`} style={styles.chatHistoryContainer}>
               {messages.map((msg) => (<div key={msg.id} style={msg.sender === "user" ? styles.userMessage : styles.botMessage}>{msg.text}</div>))}
               <div ref={chatMessagesEndRef} />
             </div>
-            <div style={styles.voiceUIPrompt}>
+            {!isConfirmationVisible && <div style={styles.voiceUIPrompt}>
               {animatingOutPrompt.text && (<div key={animatingOutPrompt.key} style={{ position: "absolute", top: 0, left: 0, right: 0, fontSize: "inherit", fontWeight: "inherit", lineHeight: "inherit", padding: "inherit", color: "#adb5bd", animation: "moveUpAndFadeOut 0.4s ease-out forwards" }}>{animatingOutPrompt.text}</div>)}
               <div key={`current-${currentDisplayPromptText}-${messages.filter((m) => m.sender === "bot").length}`} style={{ fontSize: "inherit", fontWeight: "inherit", lineHeight: "inherit", padding: "inherit", color: "inherit", animation: animatingOutPrompt.text ? "fadeInCurrent 0.3s 0.1s ease-in forwards" : "none", opacity: animatingOutPrompt.text ? 0 : 1 }}>{currentDisplayPromptText}</div>
-            </div>
+            </div>}
             <div style={styles.recognizedTextDisplay}>{speechSupported ? inputValue || "\u00A0" : "Speech input unavailable."}</div>
             <div style={styles.voiceUIControlsContainer}>
               <div ref={siriContainerRef} style={styles.waveformDisplay}></div>
