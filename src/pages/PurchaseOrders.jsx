@@ -286,9 +286,9 @@ function PurchaseOrders() {
                     >
                       <TableCell className="font-medium">{poItem.POId}</TableCell>
                       <TableCell>{ "Miracle Software Systems"}</TableCell>
+                      <TableCell>{"$123000"}</TableCell>
+                      <TableCell>{getStatusBadge(poItem.Status)}</TableCell>
                       <TableCell>{new Date(poItem.CreatedAt).toLocaleDateString()}</TableCell>
-                      <TableCell>{getStatusBadge(poItem.Status)}</TableCell>
-                      <TableCell>{getStatusBadge(poItem.Status)}</TableCell>
                       <TableCell className="">
                         <div className="flex gap-1 sm:gap-2">
                           <Button
