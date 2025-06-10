@@ -786,6 +786,19 @@ const POGenerationScreen = ({
       setIsConfirmationVisible(false)
       ttsQueueRef.current.push({ text: "What would you like for the delivery address to be?" });
       setTimeout(() => { if (processTTSQueueRef.current && !isBotSpeakingRef.current) processTTSQueueRef.current(); }, 50);
+      // setTimeout(() => {
+      //   if (
+      //     userWantsToListenRef.current &&
+      //     speechSupported &&
+      //     !isBotTyping && // State check
+      //     !isBotSpeakingRef.current &&
+      //     !isListeningRef.current &&
+      //     ttsQueueRef.current.length === 0 &&
+      //     startContinuousAzureListeningRef.current
+      //   ) {
+      //     startContinuousAzureListeningRef.current();
+      //   }
+      // }, 100);
       setMessages(() => [
             { id: Date.now() + Math.random(), text: "Welcome to the Miraxeon Voice Agent for PO Creation.", sender: "bot" },
             { id: Date.now() + Math.random(), text: "What would you like for the delivery address to be?", sender: "bot" },
@@ -837,7 +850,7 @@ const POGenerationScreen = ({
     subTitle: { fontSize: "14px", color: "#555", marginBottom: "10px" },
     contentArea: { display: "flex", flex: 1, overflow: "hidden",width:"100%" },
     chatPane: {display: "flex",width:"50%", flexDirection: "column", backgroundColor: "#FFFFFF", color: "#212529", position: "relative", borderRight: "1px solid #E0E0E0" },
-    chatHistoryContainer: { overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px', paddingRight: '5px' },
+    chatHistoryContainer: {overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px', paddingRight: '5px' },
     chatMessage: { padding: '10px 15px', borderRadius: '18px', maxWidth: '80%', wordWrap: 'break-word', fontSize: '14px', lineHeight: '1.5', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' },
     userMessage: { backgroundColor: '#007bff', color: 'white', alignSelf: 'flex-end', borderBottomRightRadius: '4px' },
     botMessage: { backgroundColor: '#e9ecef', color: '#212529', alignSelf: 'flex-start', borderBottomLeftRadius: '4px' },
@@ -930,7 +943,7 @@ const POGenerationScreen = ({
           </div>
 
           <hr />
-          <div style={{...styles.chatPane,width:"100%",padding:20}}>
+          <div style={{...styles.chatPane,width:"100%",height:"100%",padding:20}}>
             {isConfirmationVisible && <>
               <div className="bg-white/70 absolute h-full w-full top-0 left-0 z-10"></div>
               <div className="absolute h-full w-full top-0 left-0 z-20 flex justify-center items-center flex-col gap-3">
