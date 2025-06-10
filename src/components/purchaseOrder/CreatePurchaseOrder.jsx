@@ -850,7 +850,7 @@ const POGenerationScreen = ({
     subTitle: { fontSize: "14px", color: "#555", marginBottom: "10px" },
     contentArea: { display: "flex", flex: 1, overflow: "hidden",width:"100%" },
     chatPane: {display: "flex",width:"50%", flexDirection: "column", backgroundColor: "#FFFFFF", color: "#212529", position: "relative", borderRight: "1px solid #E0E0E0" },
-    chatHistoryContainer: {overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px', paddingRight: '5px' },
+    chatHistoryContainer: {flex:1,overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px', paddingRight: '5px' },
     chatMessage: { padding: '10px 15px', borderRadius: '18px', maxWidth: '80%', wordWrap: 'break-word', fontSize: '14px', lineHeight: '1.5', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' },
     userMessage: { backgroundColor: '#007bff', color: 'white', alignSelf: 'flex-end', borderBottomRightRadius: '4px' },
     botMessage: { backgroundColor: '#e9ecef', color: '#212529', alignSelf: 'flex-start', borderBottomLeftRadius: '4px' },
